@@ -105,6 +105,7 @@ class _PhigrosChartPlayerState extends State<PhigrosChartPlayerWidget> {
           "http://localhost:${widget.port}/phasetida-node-demo/index.html",
         ),
       ),
+      initialSettings: settings,
       onWebViewCreated: (controller) {
         _webViewController = controller;
         widget.controller.webViewController = controller;
