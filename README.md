@@ -38,4 +38,4 @@ PhigrosChartPlayerShellWidget(
 |:-:|:-:|
 |[![](https://github.com/qianmo2233.png/?size=128)](https://github.com/qianmo2233)|
 |[@qianmo2233](https://github.com/qianmo2233)|
-|拯救了这个包原先丑陋的UI||
+|拯救了这个包原先丑陋的UI和糟糕的用户体验||
