@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
@@ -14,6 +13,9 @@ class PhigrosChartPlayerWidget extends StatefulWidget {
     int maxConbo,
     double score,
     double accurate,
+    int tapSounds,
+    int dragSounds,
+    int holdSounds,
   )
   onTick;
 
@@ -33,58 +35,59 @@ class PhigrosChartPlayerWidget extends StatefulWidget {
 class PhigrosChartPlayerController {
   InAppWebViewController? webViewController;
 
-  void loadLevel(String json) {
-    webViewController?.evaluateJavascript(
-      source: "window.simLoadLevel(`$json`);",
-    );
-  }
+  void tryEvaluate(String script) =>
+      webViewController?.evaluateJavascript(source: script);
 
-  void setSpeed(double speed) {
-    webViewController?.evaluateJavascript(source: "window.simSetSpeed($speed)");
-  }
+  void loadLevel(String json) => tryEvaluate("window.simLoadLevel(`$json`);");
 
-  void setTime(double time) {
-    webViewController?.evaluateJavascript(source: "window.simSetTime($time)");
-  }
+  void setSpeed(double speed) => tryEvaluate("window.simSetSpeed($speed)");
 
-  void setShowDebug(bool show) {
-    webViewController?.evaluateJavascript(
-      source: "window.simSetShowControls($show)",
-    );
-  }
+  void setTime(double time) => tryEvaluate("window.simSetTime($time)");
+
+  void setShowDebug(bool show) =>
+      tryEvaluate("window.simSetShowControls($show)");
 
   void setAutoPlay(bool auto) {
-    webViewController?.evaluateJavascript(source: "window.simAuto=$auto;");
-    webViewController?.evaluateJavascript(
-      source: "window.simEnableTouch=${!auto};",
-    );
+    tryEvaluate("window.simAuto=$auto;");
+    tryEvaluate("window.simEnableTouch=${!auto};");
   }
 
-  void setHighlight(bool highlight) {
-    webViewController?.evaluateJavascript(
-      source: "window.simSimultaneousHighlight=$highlight;",
-    );
-  }
+  void setHighlight(bool highlight) =>
+      tryEvaluate("window.simSimultaneousHighlight=$highlight;");
 
-  void setLogging(bool logging) {
-    webViewController?.evaluateJavascript(source: "window.simLog=$logging;");
-  }
+  void setLogging(bool logging) => tryEvaluate("window.simLog=$logging;");
 
-  void setLoggingLatency(double latency) {
-    webViewController?.evaluateJavascript(
-      source: "window.simLogLatency=$latency;",
-    );
-  }
+  void setLoggingLatency(double latency) =>
+      tryEvaluate("window.simLogLatency=$latency;");
 }
 
 class _PhigrosChartPlayerState extends State<PhigrosChartPlayerWidget> {
   late final InAppLocalhostServer _localServer;
   late final InAppWebViewController _webViewController;
   final InAppWebViewSettings settings = InAppWebViewSettings(
-    isInspectable: kDebugMode,
+    isInspectable: false,
     mediaPlaybackRequiresUserGesture: false,
     allowsInlineMediaPlayback: true,
     iframeAllowFullscreen: true,
+    useOnRenderProcessGone: false,
+    automaticallyAdjustsScrollIndicatorInsets: false,
+    isFraudulentWebsiteWarningEnabled: false,
+    domStorageEnabled: true,
+    databaseEnabled: true,
+    hardwareAcceleration: true,
+    useHybridComposition: true,
+    useShouldOverrideUrlLoading: false,
+    cacheEnabled: true,
+    clearCache: false,
+    supportZoom: false,
+    builtInZoomControls: false,
+    displayZoomControls: false,
+    disableContextMenu: true,
+    allowFileAccessFromFileURLs: false,
+    allowUniversalAccessFromFileURLs: false,
+    overScrollMode: OverScrollMode.NEVER,
+    verticalScrollBarEnabled: false,
+    horizontalScrollBarEnabled: false,
   );
 
   @override
@@ -99,7 +102,7 @@ class _PhigrosChartPlayerState extends State<PhigrosChartPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return InAppWebView(
+    return RepaintBoundary(child: InAppWebView(
       initialUrlRequest: URLRequest(
         url: WebUri(
           "http://localhost:${widget.port}/phasetida-node-demo/index.html",
@@ -112,23 +115,22 @@ class _PhigrosChartPlayerState extends State<PhigrosChartPlayerWidget> {
         controller.addJavaScriptHandler(
           handlerName: "flutterTick",
           callback: (it) {
-            final ticks = (it[0] as String).substring(1).split(",");
             widget.onTick(
-              double.tryParse(ticks[0]) ?? 0.0,
-              double.tryParse(ticks[1]) ?? 0.0,
-              int.tryParse(ticks[2]) ?? 0,
-              int.tryParse(ticks[3]) ?? 0,
-              double.tryParse(ticks[4]) ?? 0.0,
-              double.tryParse(ticks[5]) ?? 0.0,
+              (it[0] as num).toDouble(),
+              (it[1] as num).toDouble(),
+              (it[2] as num).toInt(),
+              (it[3] as num).toInt(),
+              (it[4] as num).toDouble(),
+              (it[5] as num).toDouble(),
+              (it[6] as num).toInt(),
+              (it[7] as num).toInt(),
+              (it[8] as num).toInt(),
             );
           },
         );
       },
       onConsoleMessage: (controller, consoleMessage) {
         final message = consoleMessage.message;
-        if (kDebugMode) {
-          print(consoleMessage);
-        }
         if (message.contains("loading assets")) {
           widget.onPageLoaded();
         }
@@ -136,7 +138,7 @@ class _PhigrosChartPlayerState extends State<PhigrosChartPlayerWidget> {
           widget.onAssetsLoaded();
         }
       },
-    );
+    ));
   }
 
   @override

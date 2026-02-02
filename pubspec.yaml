@@ -1,6 +1,7 @@
 name: phasetida_flutter
 description: "A simple Phigros chart player in Flutter, runs in web"
 version: 0.1.7
+publish_to: none
 homepage: https://github.com/phasetida/phasetida_flutter
 
 environment:

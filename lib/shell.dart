@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phasetida_flutter/sim.dart';
@@ -136,330 +136,345 @@ class _PhigrosChartPlayerShellState
     return Scaffold(
       backgroundColor: Colors.black,
       endDrawer: Drawer(child: _sideMenu(context)),
-      body: Stack(
-        children: [
-          Center(
-            child: AspectRatio(
-              aspectRatio: 1920.0 / 1080.0,
-              child: PhigrosChartPlayerWidget(
-                port: 11451,
-                controller: controller,
-                onAssetsLoaded: () async {
-                  controller.loadLevel(widget.jsonData);
-                  controller.setLogging(true);
-                  controller.setLoggingLatency(1000.0 / 60.0);
-                },
-                onPageLoaded: () {
-                  controller.setShowDebug(false);
-                },
-                onTick: (time, totalTime, combo, maxCombo, score, accurate) {
-                  setState(() {
-                    this.time = time;
-                    this.totalTime = totalTime;
-                    this.combo = combo;
-                    this.maxCombo = maxCombo;
-                    this.score = score;
-                    this.accurate = accurate;
-                    final abStart = this.abStart;
-                    final abEnd = this.abEnd;
-                    if (abStart != null && abEnd != null) {
-                      if (time > abEnd || time < abStart) {
-                        controller.setTime(abStart);
+      body: _playerBody(context),
+    );
+  }
+
+  Widget _playerBody(BuildContext context) {
+    return Stack(
+      children: [
+        Center(
+          child: AspectRatio(
+            aspectRatio: 1920.0 / 1080.0,
+            child: PhigrosChartPlayerWidget(
+              port: 11451,
+              controller: controller,
+              onAssetsLoaded: () async {
+                controller.loadLevel(widget.jsonData);
+                controller.setLogging(true);
+                controller.setLoggingLatency(1000.0 / 60.0);
+              },
+              onPageLoaded: () {
+                controller.tryEvaluate(
+                  "document.body.style.backgroundColor = \"black\"",
+                );
+                controller.setShowDebug(false);
+              },
+              onTick:
+                  (
+                    time,
+                    totalTime,
+                    combo,
+                    maxCombo,
+                    score,
+                    accurate,
+                    tapSounds,
+                    dragSounds,
+                    flickSounds,
+                  ) {
+                    setState(() {
+                      this.time = time;
+                      this.totalTime = totalTime;
+                      this.combo = combo;
+                      this.maxCombo = maxCombo;
+                      this.score = score;
+                      this.accurate = accurate;
+                      final abStart = this.abStart;
+                      final abEnd = this.abEnd;
+                      if (abStart != null && abEnd != null) {
+                        if (time > abEnd || time < abStart) {
+                          controller.setTime(abStart);
+                        }
                       }
-                    }
-                    if (time >= totalTime && !paused && totalTime > 0) {
-                      paused = true;
-                      updateSpeed();
-                    }
-                  });
-                },
-              ),
+                      if (time >= totalTime && !paused && totalTime > 0) {
+                        paused = true;
+                        updateSpeed();
+                      }
+                    });
+                  },
             ),
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 4,
-            child: LinearProgressIndicator(
-              value: totalTime > 0 ? (time / totalTime).clamp(0.0, 1.0) : 0.0,
-              backgroundColor: Colors.transparent,
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-              minHeight: 4,
-            ),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 4,
+          child: LinearProgressIndicator(
+            value: totalTime > 0 ? (time / totalTime).clamp(0.0, 1.0) : 0.0,
+            backgroundColor: Colors.transparent,
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            minHeight: 4,
           ),
-          if (combo >= 3)
-            Positioned(
-              top: 12,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      combo.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        height: 1.0,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 8,
-                            color: Colors.black54,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Text(
-                      "COMBO",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2.0,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 4,
-                            color: Colors.black54,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+        ),
+        if (combo >= 3)
           Positioned(
             top: 12,
-            right: 16,
-            child: Text(
-              score.toStringAsFixed(0).padLeft(7, '0'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                fontFeatures: [FontFeature.tabularFigures()],
-                shadows: [
-                  Shadow(
-                    blurRadius: 4,
-                    color: Colors.black54,
-                    offset: Offset(0, 1),
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    combo.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      height: 1.0,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 8,
+                          color: Colors.black54,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Text(
+                    "COMBO",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.0,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 4,
+                          color: Colors.black54,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          Positioned.fill(
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: _toggleControls,
-                    onDoubleTap: () {
-                      if (_isLocked) return;
-                      _onUserInteraction();
-                      controller.setTime((time - 3.0).clamp(0, totalTime));
-                      _showRewindIndicator();
-                      HapticFeedback.lightImpact();
-                    },
-                    onLongPressStart: (_) {
-                      if (_isLocked) return;
-                      _isLongPressing = true;
-                      controller.setSpeed(2.0);
-                      HapticFeedback.selectionClick();
-                    },
-                    onLongPressEnd: (_) {
-                      if (_isLocked) return;
-                      _isLongPressing = false;
-                      updateSpeed();
-                      HapticFeedback.selectionClick();
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: _toggleControls,
-                    onDoubleTap: () {
-                      if (_isLocked) return;
-                      _onUserInteraction();
-                      setState(() {
-                        if (time >= totalTime) {
-                          controller.setTime(0);
-                          paused = false;
-                        } else {
-                          paused = !paused;
-                        }
-                      });
-                      updateSpeed();
-                      HapticFeedback.lightImpact();
-                    },
-                    onLongPressStart: (_) {
-                      if (_isLocked) return;
-                      _isLongPressing = true;
-                      controller.setSpeed(2.0);
-                      HapticFeedback.selectionClick();
-                    },
-                    onLongPressEnd: (_) {
-                      if (_isLocked) return;
-                      _isLongPressing = false;
-                      updateSpeed();
-                      HapticFeedback.selectionClick();
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: _toggleControls,
-                    onDoubleTap: () {
-                      if (_isLocked) return;
-                      _onUserInteraction();
-                      controller.setTime((time + 3.0).clamp(0, totalTime));
-                      _showFastForwardIndicator();
-                      HapticFeedback.lightImpact();
-                    },
-                    onLongPressStart: (_) {
-                      if (_isLocked) return;
-                      _isLongPressing = true;
-                      controller.setSpeed(2.0);
-                      HapticFeedback.selectionClick();
-                    },
-                    onLongPressEnd: (_) {
-                      if (_isLocked) return;
-                      _isLongPressing = false;
-                      updateSpeed();
-                      HapticFeedback.selectionClick();
-                    },
-                  ),
+        Positioned(
+          top: 12,
+          right: 16,
+          child: Text(
+            score.toStringAsFixed(0).padLeft(7, '0'),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              fontFeatures: [FontFeature.tabularFigures()],
+              shadows: [
+                Shadow(
+                  blurRadius: 4,
+                  color: Colors.black54,
+                  offset: Offset(0, 1),
                 ),
               ],
             ),
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
+        ),
+        Positioned.fill(
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _toggleControls,
+                  onDoubleTap: () {
+                    if (_isLocked) return;
+                    _onUserInteraction();
+                    controller.setTime((time - 3.0).clamp(0, totalTime));
+                    _showRewindIndicator();
+                    HapticFeedback.lightImpact();
+                  },
+                  onLongPressStart: (_) {
+                    if (_isLocked) return;
+                    _isLongPressing = true;
+                    controller.setSpeed(2.0);
+                    HapticFeedback.selectionClick();
+                  },
+                  onLongPressEnd: (_) {
+                    if (_isLocked) return;
+                    _isLongPressing = false;
+                    updateSpeed();
+                    HapticFeedback.selectionClick();
+                  },
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _toggleControls,
+                  onDoubleTap: () {
+                    if (_isLocked) return;
+                    _onUserInteraction();
+                    setState(() {
+                      if (time >= totalTime) {
+                        controller.setTime(0);
+                        paused = false;
+                      } else {
+                        paused = !paused;
+                      }
+                    });
+                    updateSpeed();
+                    HapticFeedback.lightImpact();
+                  },
+                  onLongPressStart: (_) {
+                    if (_isLocked) return;
+                    _isLongPressing = true;
+                    controller.setSpeed(2.0);
+                    HapticFeedback.selectionClick();
+                  },
+                  onLongPressEnd: (_) {
+                    if (_isLocked) return;
+                    _isLongPressing = false;
+                    updateSpeed();
+                    HapticFeedback.selectionClick();
+                  },
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _toggleControls,
+                  onDoubleTap: () {
+                    if (_isLocked) return;
+                    _onUserInteraction();
+                    controller.setTime((time + 3.0).clamp(0, totalTime));
+                    _showFastForwardIndicator();
+                    HapticFeedback.lightImpact();
+                  },
+                  onLongPressStart: (_) {
+                    if (_isLocked) return;
+                    _isLongPressing = true;
+                    controller.setSpeed(2.0);
+                    HapticFeedback.selectionClick();
+                  },
+                  onLongPressEnd: (_) {
+                    if (_isLocked) return;
+                    _isLongPressing = false;
+                    updateSpeed();
+                    HapticFeedback.selectionClick();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: AnimatedOpacity(
+            opacity: (!_isLocked && _showControls) ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: IgnorePointer(
+              ignoring: _isLocked || !_showControls,
+              child: _topBar(context),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: AnimatedOpacity(
+            opacity: (!_isLocked && _showControls) ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: IgnorePointer(
+              ignoring: _isLocked || !_showControls,
+              child: _bottomController(context),
+            ),
+          ),
+        ),
+        Positioned(
+          right: 16,
+          top: 0,
+          bottom: 0,
+          child: Center(
             child: AnimatedOpacity(
-              opacity: (!_isLocked && _showControls) ? 1.0 : 0.0,
+              opacity: _showControls ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 300),
               child: IgnorePointer(
-                ignoring: _isLocked || !_showControls,
-                child: _topBar(context),
+                ignoring: !_showControls,
+                child: IconButton(
+                  onPressed: () {
+                    _onUserInteraction();
+                    setState(() {
+                      _isLocked = !_isLocked;
+                    });
+                  },
+                  icon: Icon(
+                    _isLocked ? Icons.lock_outline : Icons.lock_open,
+                    color: Colors.white,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black45,
+                    padding: const EdgeInsets.all(12),
+                  ),
+                ),
               ),
             ),
           ),
-          Positioned(
-            bottom: 0,
+        ),
+        if (_isLongPressing)
+          const Positioned(
+            top: 20,
             left: 0,
             right: 0,
-            child: AnimatedOpacity(
-              opacity: (!_isLocked && _showControls) ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              child: IgnorePointer(
-                ignoring: _isLocked || !_showControls,
-                child: _bottomController(context),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 16,
-            top: 0,
-            bottom: 0,
             child: Center(
-              child: AnimatedOpacity(
-                opacity: _showControls ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: IgnorePointer(
-                  ignoring: !_showControls,
-                  child: IconButton(
-                    onPressed: () {
-                      _onUserInteraction();
-                      setState(() {
-                        _isLocked = !_isLocked;
-                      });
-                    },
-                    icon: Icon(
-                      _isLocked ? Icons.lock_outline : Icons.lock_open,
-                      color: Colors.white,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black45,
-                      padding: const EdgeInsets.all(12),
-                    ),
-                  ),
-                ),
+              child: Chip(
+                backgroundColor: Colors.black54,
+                label: Text("2x Speed", style: TextStyle(color: Colors.white)),
               ),
             ),
           ),
-          if (_isLongPressing)
-            const Positioned(
-              top: 20,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Chip(
-                  backgroundColor: Colors.black54,
-                  label: Text(
-                    "2x Speed",
-                    style: TextStyle(color: Colors.white),
+        if (_showRewind)
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: MediaQuery.of(context).size.width / 3,
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.fast_rewind, color: Colors.white, size: 48),
+                  Text(
+                    "-3s",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-          if (_showRewind)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: MediaQuery.of(context).size.width / 3,
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.fast_rewind, color: Colors.white, size: 48),
-                    Text(
-                      "-3s",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+          ),
+        if (_showFastForward)
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: MediaQuery.of(context).size.width / 3,
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.fast_forward, color: Colors.white, size: 48),
+                  Text(
+                    "+3s",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          if (_showFastForward)
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: MediaQuery.of(context).size.width / 3,
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.fast_forward, color: Colors.white, size: 48),
-                    Text(
-                      "+3s",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
@@ -692,7 +707,7 @@ class _PhigrosChartPlayerShellState
                   value: auto,
                   onChanged: (v) {
                     setState(() {
-                      auto = v ?? false;
+                      auto = v;
                     });
                     controller.setAutoPlay(auto);
                   },
@@ -710,7 +725,7 @@ class _PhigrosChartPlayerShellState
                   value: highlight,
                   onChanged: (v) {
                     setState(() {
-                      highlight = v ?? false;
+                      highlight = v;
                     });
                     controller.setHighlight(highlight);
                   },
