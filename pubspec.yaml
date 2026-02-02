@@ -1,6 +1,7 @@
 name: phasetida_flutter
 description: "A simple Phigros chart player in Flutter, runs in web"
-version: 0.0.1
+version: 0.1.7
+publish_to: none
 homepage: https://github.com/phasetida/phasetida_flutter
 
 environment:
@@ -24,3 +25,4 @@ flutter:
     - assets/phasetida-node-demo/assets/
     - assets/phasetida-node-demo/click/
     - assets/phasetida-node-demo/note/
+    - assets/phasetida-node-demo/splash/
