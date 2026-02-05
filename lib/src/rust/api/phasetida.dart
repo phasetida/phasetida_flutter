@@ -45,6 +45,8 @@ void resetNoteState({required double beforeTimeInSecond}) => RustLib
     .api
     .crateApiPhasetidaResetNoteState(beforeTimeInSecond: beforeTimeInSecond);
 
+void clearStates() => RustLib.instance.api.crateApiPhasetidaClearStates();
+
 class U8Array16384 extends NonGrowableListView<int> {
   static const arraySize = 16384;
 

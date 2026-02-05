@@ -59,6 +59,11 @@ pub fn reset_note_state(before_time_in_second: f64) {
     phasetida_core::reset_note_state(before_time_in_second);
 }
 
+#[flutter_rust_bridge::frb(sync)]
+pub fn clear_states() {
+    phasetida_core::clear_states();
+}
+
 #[flutter_rust_bridge::frb(init)]
 pub fn init_app() {
     flutter_rust_bridge::setup_default_user_utils();
