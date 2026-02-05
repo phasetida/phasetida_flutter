@@ -604,13 +604,15 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
             IconButton(
               onPressed: () {
                 _onUserInteraction();
-                if (controller.logTime.value >= totalTime) {
-                  controller.setTime(0);
-                  paused = false;
-                } else {
-                  paused = !paused;
-                }
-                updateSpeed();
+                setState(() {
+                  if (controller.logTime.value >= totalTime) {
+                    controller.setTime(0);
+                    paused = false;
+                  } else {
+                    paused = !paused;
+                  }
+                  updateSpeed();
+                });
               },
               icon: Icon(
                 paused ? Icons.play_arrow_sharp : Icons.pause,
