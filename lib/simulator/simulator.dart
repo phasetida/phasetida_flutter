@@ -4,9 +4,10 @@ import 'dart:ui' as ui;
 
 import 'package:buffer/buffer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
-import 'package:phasetida_flutter/src/rust/api/phasetida.dart';
+import 'package:phasetida_flutter/src/rust/api/phasetida.dart' as phasetida;
 
 class PhigrosSimulatorRenderWidget extends StatefulWidget {
   final PhigrosSimulatorRenderController controller;
@@ -89,7 +90,7 @@ class _PhigrosSimulatorRenderWidgetState
   AudioSource? _dragSound;
   AudioSource? _flickSound;
 
-  Duration lastDuration = Duration.zero;
+  Ticker? _reDrawTicker;
 
   @override
   void initState() {
@@ -98,7 +99,8 @@ class _PhigrosSimulatorRenderWidgetState
   }
 
   Future<void> _load() async {
-    final length = loadLevel(json: widget.levelJson);
+    phasetida.clearStates();
+    final length = phasetida.loadLevel(json: widget.levelJson);
     if (length == null) {
       widget.controller.isLoading.value = false;
       widget.controller.loadError.value = "failed to load level";
@@ -163,8 +165,8 @@ class _PhigrosSimulatorRenderWidgetState
     _painterController.splashScale = 0.35;
     widget.controller._painterController = _painterController;
     _painter = _Painter(controller: _painterController);
-    widget.onLoad?.call(totalTime, getBufferSize().toInt());
-    createTicker((_) {
+    widget.onLoad?.call(totalTime, phasetida.getBufferSize().toInt());
+    _reDrawTicker = createTicker((_) {
       (_canvasKey.currentContext?.findRenderObject() as RenderBox?)
           ?.markNeedsPaint();
       widget.controller.logTime.value = _painterController.logTime ?? 0;
@@ -184,9 +186,9 @@ class _PhigrosSimulatorRenderWidgetState
         _playSound(_dragSound, _painterController.logDragSound);
         _playSound(_flickSound, _painterController.logFlickSound);
       }
-    }).start();
+    })..start();
     _painterController.setupTime();
-    resetNoteState(beforeTimeInSecond: 0);
+    phasetida.resetNoteState(beforeTimeInSecond: 0);
     setState(() {
       widget.controller.isLoading.value = false;
     });
@@ -213,7 +215,7 @@ class _PhigrosSimulatorRenderWidgetState
 
   @override
   Widget build(BuildContext context) {
-    if(widget.controller.isLoading.value){
+    if (widget.controller.isLoading.value) {
       return SizedBox.shrink();
     }
     return RepaintBoundary(
@@ -223,6 +225,12 @@ class _PhigrosSimulatorRenderWidgetState
         size: Size.infinite,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _reDrawTicker?.dispose();
+    super.dispose();
   }
 }
 
@@ -301,15 +309,14 @@ class PainterController {
     required this.clickImages,
   });
 
-  void setupTime(){
-    _startTime =
-        DateTime.timestamp().millisecondsSinceEpoch / 1000.0;
+  void setupTime() {
+    _startTime = DateTime.timestamp().millisecondsSinceEpoch / 1000.0;
     _lastChangeSpeedTime = 0;
   }
 
   void setNoteScale(double noteScale) {
     _noteScale = noteScale;
-    loadImageOffset(
+    phasetida.loadImageOffset(
       holdHeadHeight: holdHeadImage.height.toDouble() * _noteScale,
       holdHeadHighlightHeight:
           holdHeadHighlightImage.height.toDouble() * _noteScale,
@@ -330,7 +337,7 @@ class PainterController {
     _lastChangeSpeedTime = 0.0;
     _startTime = now - time / _speed;
     _lastTime = 0.0;
-    resetNoteState(beforeTimeInSecond: time);
+    phasetida.resetNoteState(beforeTimeInSecond: time);
   }
 }
 
@@ -371,8 +378,8 @@ class _Painter extends CustomPainter {
     final time =
         (controller._lastChangeSpeedTime +
         (now - controller._startTime) * controller._speed);
-    final deltaTime = time - controller._lastTime;
-    final bufferWrapper = tickLines(
+    final deltaTime = max(time - controller._lastTime, 0.0);
+    final bufferWrapper = phasetida.tickLines(
       timeInSecond: time,
       deltaTimeInSecond: deltaTime,
       auto: true,
