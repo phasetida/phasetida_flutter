@@ -799,16 +799,16 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
                   ),
                 ),
                 const Divider(),
-                SwitchListTile(
-                  title: const Text("自动播放"),
-                  value: auto,
-                  onChanged: (v) {
-                    setState(() {
-                      auto = v;
-                    });
-                    controller.setAutoPlay(auto);
-                  },
-                ),
+                // SwitchListTile(
+                //   title: const Text("自动播放"),
+                //   value: auto,
+                //   onChanged: (v) {
+                //     setState(() {
+                //       auto = v;
+                //     });
+                //     controller.setAutoPlay(auto);
+                //   },
+                // ),
                 if (!auto)
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
