@@ -22,7 +22,6 @@
 ```dart
 PhigrosChartPlayerShellWidget(
     jsonData: /* add your chart json data here*/,
-    port: 11451 /* the port of local server */,
     songName: /* for ui display */,
     author: /* for ui display */,
     chartComposer: /* for ui display */,
