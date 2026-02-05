@@ -15,6 +15,7 @@ pub fn greet(name: String) -> String {
 
 #[flutter_rust_bridge::frb(sync)]
 pub fn load_level(json: String) -> Option<f64> {
+    phasetida_core::clear_states();
     serde_json::from_str(json.as_str())
         .ok()
         .map(|it| phasetida_core::init_line_states(it).length_in_second)
