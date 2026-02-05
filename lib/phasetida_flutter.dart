@@ -6,7 +6,8 @@ import 'package:phasetida_flutter/src/rust/frb_generated.dart';
 export 'simulator/shell.dart' show PhigrosChartPlayerShellWidget;
 export 'simulator/simulator.dart' show PhigrosSimulatorRenderWidget;
 
-const String phasetidaVersion = "0.2.0";
+const String phasetidaFlutterVersion = "0.2.0";
+const String phasetidaCoreVersion = "0.1.11";
 
 class PhasetidaFlutter {
   static Future<void> init() async {

@@ -31,6 +31,7 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
   final controller = PhigrosSimulatorRenderController();
   bool auto = true;
   bool highlight = true;
+  bool hitSound = true;
 
   double totalTime = 0.0;
 
@@ -783,7 +784,8 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
                       _infoRow("A-B End", _formatTime(abEnd), theme),
                 ),
                 const Divider(),
-                _infoRow("phasetida version", phasetidaVersion, theme),
+                _infoRow("phasetida_flutter version", phasetidaFlutterVersion, theme),
+                _infoRow("phasetida-core version", phasetidaCoreVersion, theme),
                 ValueListenableBuilder(
                   valueListenable: controller.logBufferUsage,
                   builder: (_, bufferUsage, _) => _infoRow(
@@ -799,6 +801,16 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
                   ),
                 ),
                 const Divider(),
+                SwitchListTile(
+                  title: const Text("打击音效"),
+                  value: hitSound,
+                  onChanged: (v) {
+                    setState(() {
+                      hitSound = v;
+                    });
+                    controller.setEnableSound(hitSound);
+                  },
+                ),
                 // SwitchListTile(
                 //   title: const Text("自动播放"),
                 //   value: auto,
