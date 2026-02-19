@@ -155,15 +155,13 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
           valueListenable: controller.isLoading,
           builder: (_, isLoading, _) => ValueListenableBuilder(
             valueListenable: controller.loadError,
-            builder: (_, loadError, _) => Stack(
-              children: [
-                if (isLoading || loadError != null) _loadingBody(context),
-                AnimatedOpacity(
-                  opacity: isLoading || loadError != null ? 0 : 1,
-                  duration: Duration(milliseconds: 250),
-                  child: _playerBody(context),
-                ),
-              ],
+            builder: (_, loadError, _) => AnimatedCrossFade(
+              crossFadeState: (isLoading || loadError != null)
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              duration: Duration(milliseconds: 250),
+              firstChild: _loadingBody(context),
+              secondChild: _playerBody(context),
             ),
           ),
         ),
@@ -784,7 +782,11 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
                       _infoRow("A-B End", _formatTime(abEnd), theme),
                 ),
                 const Divider(),
-                _infoRow("phasetida_flutter version", phasetidaFlutterVersion, theme),
+                _infoRow(
+                  "phasetida_flutter version",
+                  phasetidaFlutterVersion,
+                  theme,
+                ),
                 _infoRow("phasetida-core version", phasetidaCoreVersion, theme),
                 ValueListenableBuilder(
                   valueListenable: controller.logBufferUsage,

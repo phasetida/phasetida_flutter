@@ -13,7 +13,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 String greet({required String name}) =>
     RustLib.instance.api.crateApiPhasetidaGreet(name: name);
 
-double? loadLevel({required String json}) =>
+double loadLevel({required String json}) =>
     RustLib.instance.api.crateApiPhasetidaLoadLevel(json: json);
 
 U8Array16384 tickLines({

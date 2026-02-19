@@ -70,6 +70,7 @@ flutter:
 
   assets:
     - assets/test.json
+    - assets/testv1.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:

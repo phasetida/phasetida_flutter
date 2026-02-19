@@ -66,12 +66,12 @@ class PhigrosSimulatorRenderController {
 class _PhigrosSimulatorRenderWidgetState
     extends State<PhigrosSimulatorRenderWidget>
     with SingleTickerProviderStateMixin {
-  late final _Painter _painter;
-  late final PainterController _painterController;
-
   final _canvasKey = GlobalKey();
 
   double totalTime = -1.0;
+
+  _Painter? _painter;
+  PainterController? painterController;
 
   ui.Image? _tapImage;
   ui.Image? _tapHighlightImage;
@@ -100,13 +100,14 @@ class _PhigrosSimulatorRenderWidgetState
 
   Future<void> _load() async {
     phasetida.clearStates();
-    final length = phasetida.loadLevel(json: widget.levelJson);
-    if (length == null) {
+    try {
+      final length = phasetida.loadLevel(json: widget.levelJson);
+      totalTime = length;
+    } catch (e) {
       widget.controller.isLoading.value = false;
-      widget.controller.loadError.value = "failed to load level";
+      widget.controller.loadError.value = "failed to load level: $e";
       return;
     }
-    totalTime = length;
     try {
       _tapImage = await _loadImage("notes/tap.png");
       _tapHighlightImage = await _loadImage("notes/tap_hl.png");
@@ -145,7 +146,7 @@ class _PhigrosSimulatorRenderWidgetState
       widget.controller.loadError.value = "failed to load sound: $e";
       return;
     }
-    _painterController = PainterController(
+    final painterController = PainterController(
       tapImage: _tapImage!,
       tapHighlightImage: _tapHighlightImage!,
       dragImage: _dragImage!,
@@ -160,34 +161,35 @@ class _PhigrosSimulatorRenderWidgetState
       splashImages: _splashImages!,
       clickImages: _clickImages!,
     );
-    _painterController.setNoteScale(0.25);
-    _painterController.clickScale = 1.5;
-    _painterController.splashScale = 0.35;
-    widget.controller._painterController = _painterController;
-    _painter = _Painter(controller: _painterController);
+    painterController.setNoteScale(0.25);
+    painterController.clickScale = 1.5;
+    painterController.splashScale = 0.35;
+    widget.controller._painterController = painterController;
+    _painter = _Painter(controller: painterController);
     widget.onLoad?.call(totalTime, phasetida.getBufferSize().toInt());
     _reDrawTicker = createTicker((_) {
       (_canvasKey.currentContext?.findRenderObject() as RenderBox?)
           ?.markNeedsPaint();
-      widget.controller.logTime.value = _painterController.logTime ?? 0;
-      widget.controller.logCombo.value = _painterController.logCombo ?? 0;
-      widget.controller.logMaxCombo.value = _painterController.logMaxCombo ?? 0;
-      widget.controller.logScore.value = _painterController.logScore ?? 0;
-      widget.controller.logAccurate.value = _painterController.logAccurate ?? 0;
-      widget.controller.logTapSound.value = _painterController.logTapSound ?? 0;
+      widget.controller.logTime.value = painterController.logTime ?? 0;
+      widget.controller.logCombo.value = painterController.logCombo ?? 0;
+      widget.controller.logMaxCombo.value = painterController.logMaxCombo ?? 0;
+      widget.controller.logScore.value = painterController.logScore ?? 0;
+      widget.controller.logAccurate.value = painterController.logAccurate ?? 0;
+      widget.controller.logTapSound.value = painterController.logTapSound ?? 0;
       widget.controller.logDragSound.value =
-          _painterController.logDragSound ?? 0;
+          painterController.logDragSound ?? 0;
       widget.controller.logFlickSound.value =
-          _painterController.logFlickSound ?? 0;
+          painterController.logFlickSound ?? 0;
       widget.controller.logBufferUsage.value =
-          _painterController.logBufferUsage ?? 0;
+          painterController.logBufferUsage ?? 0;
       if (widget.controller._enableSound) {
-        _playSound(_tapSound, _painterController.logTapSound);
-        _playSound(_dragSound, _painterController.logDragSound);
-        _playSound(_flickSound, _painterController.logFlickSound);
+        _playSound(_tapSound, painterController.logTapSound);
+        _playSound(_dragSound, painterController.logDragSound);
+        _playSound(_flickSound, painterController.logFlickSound);
       }
     })..start();
-    _painterController.setupTime();
+    painterController.setupTime();
+    this.painterController = painterController;
     phasetida.resetNoteState(beforeTimeInSecond: 0);
     setState(() {
       widget.controller.isLoading.value = false;

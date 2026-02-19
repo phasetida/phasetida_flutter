@@ -8,7 +8,7 @@ late String jsonData;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PhasetidaFlutter.init();
-  jsonData = await rootBundle.loadString("assets/test.json");
+  jsonData = await rootBundle.loadString("assets/testv1.json");
   await FullScreen.ensureInitialized();
   FullScreen.setFullScreen(true);
   SystemChrome.setPreferredOrientations([
