@@ -13,7 +13,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 String greet({required String name}) =>
     RustLib.instance.api.crateApiPhasetidaGreet(name: name);
 
-double loadLevel({required String json}) =>
+(double, double, int) loadLevel({required String json}) =>
     RustLib.instance.api.crateApiPhasetidaLoadLevel(json: json);
 
 U8Array16384 tickLines({
@@ -24,6 +24,18 @@ U8Array16384 tickLines({
   timeInSecond: timeInSecond,
   deltaTimeInSecond: deltaTimeInSecond,
   auto: auto,
+);
+
+void touchAction({
+  required int state,
+  required int id,
+  required double x,
+  required double y,
+}) => RustLib.instance.api.crateApiPhasetidaTouchAction(
+  state: state,
+  id: id,
+  x: x,
+  y: y,
 );
 
 void loadImageOffset({
@@ -44,6 +56,9 @@ void resetNoteState({required double beforeTimeInSecond}) => RustLib
     .instance
     .api
     .crateApiPhasetidaResetNoteState(beforeTimeInSecond: beforeTimeInSecond);
+
+void resetTouchState() =>
+    RustLib.instance.api.crateApiPhasetidaResetTouchState();
 
 void clearStates() => RustLib.instance.api.crateApiPhasetidaClearStates();
 

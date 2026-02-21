@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -7,17 +8,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
+import 'package:phasetida_flutter/simulator/input_container.dart';
 import 'package:phasetida_flutter/src/rust/api/phasetida.dart' as phasetida;
 
 class PhigrosSimulatorRenderWidget extends StatefulWidget {
   final PhigrosSimulatorRenderController controller;
-  final void Function(double totalTime, int bufferSize)? onLoad;
+  final void Function(
+    double totalTime,
+    double offset,
+    int formatVersion,
+    int bufferSize,
+  )?
+  onLoad;
   final String levelJson;
+  final Uint8List songBuffer;
 
   const PhigrosSimulatorRenderWidget({
     super.key,
     required this.controller,
     required this.levelJson,
+    required this.songBuffer,
     this.onLoad,
   });
 
@@ -39,19 +49,26 @@ class PhigrosSimulatorRenderController {
   ValueNotifier<int> logBufferUsage = ValueNotifier(0);
   ValueNotifier<bool> isLoading = ValueNotifier(true);
   ValueNotifier<String?> loadError = ValueNotifier(null);
+  ValueNotifier<String?> soundError = ValueNotifier(null);
+
+  StreamController<double> musicTimeController = StreamController();
+  StreamController<double> musicSpeedController = StreamController();
 
   bool _enableSound = true;
 
   void setTime(double time) {
     _painterController?.setTime(time);
+    musicTimeController.add(time);
   }
 
   void setSpeed(double speed) {
     _painterController?.setSpeed(speed);
+    musicSpeedController.add(speed);
   }
 
   void setAutoPlay(bool auto) {
-    //TODO
+    _painterController?._auto = auto;
+    phasetida.resetTouchState();
   }
 
   void setHighlight(bool highlight) {
@@ -68,27 +85,13 @@ class _PhigrosSimulatorRenderWidgetState
     with SingleTickerProviderStateMixin {
   final _canvasKey = GlobalKey();
 
-  double totalTime = -1.0;
-
   _Painter? _painter;
   PainterController? painterController;
 
-  ui.Image? _tapImage;
-  ui.Image? _tapHighlightImage;
-  ui.Image? _dragImage;
-  ui.Image? _dragHighlightImage;
-  ui.Image? _flickImage;
-  ui.Image? _flickHighlightImage;
-  ui.Image? _holdHeadImage;
-  ui.Image? _holdHeadHighlightImage;
-  ui.Image? _holdBodyImage;
-  ui.Image? _holdBodyHighlightImage;
-  ui.Image? _holdEndImage;
-  List<ui.Image>? _splashImages;
-  List<ui.Image>? _clickImages;
-  AudioSource? _tapSound;
-  AudioSource? _dragSound;
-  AudioSource? _flickSound;
+  InputContainer inputContainer = InputContainer();
+
+  StreamSubscription<double>? musicTimeSub;
+  StreamSubscription<double>? musicSpeedSub;
 
   Ticker? _reDrawTicker;
 
@@ -100,30 +103,55 @@ class _PhigrosSimulatorRenderWidgetState
 
   Future<void> _load() async {
     phasetida.clearStates();
+    double? musicTotalTime;
+    double estTotalTime;
+    double offset;
+    int formatVersion;
+    ui.Image tapImage;
+    ui.Image tapHighlightImage;
+    ui.Image dragImage;
+    ui.Image dragHighlightImage;
+    ui.Image flickImage;
+    ui.Image flickHighlightImage;
+    ui.Image holdHeadImage;
+    ui.Image holdHeadHighlightImage;
+    ui.Image holdBodyImage;
+    ui.Image holdBodyHighlightImage;
+    ui.Image holdEndImage;
+    List<ui.Image> splashImages;
+    List<ui.Image> clickImages;
+    AudioSource? tapSound;
+    AudioSource? dragSound;
+    AudioSource? flickSound;
+    AudioSource? songSource;
+    SoundHandle? songHandle;
+    Duration? songLength;
     try {
-      final length = phasetida.loadLevel(json: widget.levelJson);
-      totalTime = length;
+      final metadata = phasetida.loadLevel(json: widget.levelJson);
+      estTotalTime = metadata.$1;
+      offset = metadata.$2;
+      formatVersion = metadata.$3;
     } catch (e) {
       widget.controller.isLoading.value = false;
       widget.controller.loadError.value = "failed to load level: $e";
       return;
     }
     try {
-      _tapImage = await _loadImage("notes/tap.png");
-      _tapHighlightImage = await _loadImage("notes/tap_hl.png");
-      _dragImage = await _loadImage("notes/drag.png");
-      _dragHighlightImage = await _loadImage("notes/drag_hl.png");
-      _flickImage = await _loadImage("notes/flick.png");
-      _flickHighlightImage = await _loadImage("notes/flick_hl.png");
-      _holdHeadImage = await _loadImage("notes/hold_head.png");
-      _holdHeadHighlightImage = await _loadImage("notes/hold_head_hl.png");
-      _holdBodyImage = await _loadImage("notes/hold_body.png");
-      _holdBodyHighlightImage = await _loadImage("notes/hold_body_hl.png");
-      _holdEndImage = await _loadImage("notes/hold_end.png");
-      _splashImages = await Future.wait(
+      tapImage = await _loadImage("notes/tap.png");
+      tapHighlightImage = await _loadImage("notes/tap_hl.png");
+      dragImage = await _loadImage("notes/drag.png");
+      dragHighlightImage = await _loadImage("notes/drag_hl.png");
+      flickImage = await _loadImage("notes/flick.png");
+      flickHighlightImage = await _loadImage("notes/flick_hl.png");
+      holdHeadImage = await _loadImage("notes/hold_head.png");
+      holdHeadHighlightImage = await _loadImage("notes/hold_head_hl.png");
+      holdBodyImage = await _loadImage("notes/hold_body.png");
+      holdBodyHighlightImage = await _loadImage("notes/hold_body_hl.png");
+      holdEndImage = await _loadImage("notes/hold_end.png");
+      splashImages = await Future.wait(
         List.generate(30, (i) async => _loadImage("splash/splash$i.png")),
       );
-      _clickImages = await Future.wait(
+      clickImages = await Future.wait(
         List.generate(30, (i) async => _loadImage("clicks/click$i.png")),
       );
     } catch (e) {
@@ -132,41 +160,78 @@ class _PhigrosSimulatorRenderWidgetState
       return;
     }
     try {
-      _tapSound = await SoLoud.instance.loadAsset(
+      tapSound = await SoLoud.instance.loadAsset(
         "packages/phasetida_flutter/assets/sound/hitSong0.wav",
       );
-      _dragSound = await SoLoud.instance.loadAsset(
+      dragSound = await SoLoud.instance.loadAsset(
         "packages/phasetida_flutter/assets/sound/hitSong1.wav",
       );
-      _flickSound = await SoLoud.instance.loadAsset(
+      flickSound = await SoLoud.instance.loadAsset(
         "packages/phasetida_flutter/assets/sound/hitSong2.wav",
       );
     } catch (e) {
-      widget.controller.isLoading.value = false;
-      widget.controller.loadError.value = "failed to load sound: $e";
-      return;
+      widget.controller.soundError.value = "failed to load effect sound: $e";
     }
+    try {
+      songSource = await SoLoud.instance.loadMem("song.ogg", widget.songBuffer);
+      songLength = SoLoud.instance.getLength(songSource);
+      musicTotalTime = songLength.inMilliseconds / 1000.0;
+      songHandle = await SoLoud.instance.play(
+        songSource,
+        paused: false,
+        looping: true,
+        loopingStartAt: songLength,
+      );
+      SoLoud.instance.setRelativePlaySpeed(songHandle, 0.0000001);
+    } catch (e) {
+      widget.controller.soundError.value = "failed to load game sound: $e";
+    }
+    musicTimeSub = widget.controller.musicTimeController.stream.listen((time) {
+      if (songHandle != null && songLength != null) {
+        final lengthInMillisecond = songLength.inMilliseconds - 10;
+        SoLoud.instance.setPause(songHandle, false);
+        SoLoud.instance.seek(
+          songHandle,
+          Duration(
+            milliseconds: (time * 1000.0).toInt().clamp(0, lengthInMillisecond),
+          ),
+        );
+      }
+    });
+    musicSpeedSub = widget.controller.musicSpeedController.stream.listen((
+      speed,
+    ) {
+      if (songHandle != null) {
+        SoLoud.instance.setRelativePlaySpeed(songHandle, speed);
+      }
+    });
     final painterController = PainterController(
-      tapImage: _tapImage!,
-      tapHighlightImage: _tapHighlightImage!,
-      dragImage: _dragImage!,
-      dragHighlightImage: _dragHighlightImage!,
-      flickImage: _flickImage!,
-      flickHighlightImage: _flickHighlightImage!,
-      holdHeadImage: _holdHeadImage!,
-      holdHeadHighlightImage: _holdHeadHighlightImage!,
-      holdBodyImage: _holdBodyImage!,
-      holdBodyHighlightImage: _holdBodyHighlightImage!,
-      holdEndImage: _holdEndImage!,
-      splashImages: _splashImages!,
-      clickImages: _clickImages!,
+      tapImage: tapImage,
+      tapHighlightImage: tapHighlightImage,
+      dragImage: dragImage,
+      dragHighlightImage: dragHighlightImage,
+      flickImage: flickImage,
+      flickHighlightImage: flickHighlightImage,
+      holdHeadImage: holdHeadImage,
+      holdHeadHighlightImage: holdHeadHighlightImage,
+      holdBodyImage: holdBodyImage,
+      holdBodyHighlightImage: holdBodyHighlightImage,
+      holdEndImage: holdEndImage,
+      splashImages: splashImages,
+      clickImages: clickImages,
+      offset: offset,
     );
     painterController.setNoteScale(0.25);
     painterController.clickScale = 1.5;
     painterController.splashScale = 0.35;
     widget.controller._painterController = painterController;
     _painter = _Painter(controller: painterController);
-    widget.onLoad?.call(totalTime, phasetida.getBufferSize().toInt());
+    widget.onLoad?.call(
+      musicTotalTime ?? estTotalTime,
+      offset,
+      formatVersion,
+      phasetida.getBufferSize().toInt(),
+    );
     _reDrawTicker = createTicker((_) {
       (_canvasKey.currentContext?.findRenderObject() as RenderBox?)
           ?.markNeedsPaint();
@@ -183,12 +248,13 @@ class _PhigrosSimulatorRenderWidgetState
       widget.controller.logBufferUsage.value =
           painterController.logBufferUsage ?? 0;
       if (widget.controller._enableSound) {
-        _playSound(_tapSound, painterController.logTapSound);
-        _playSound(_dragSound, painterController.logDragSound);
-        _playSound(_flickSound, painterController.logFlickSound);
+        _playSound(tapSound, painterController.logTapSound);
+        _playSound(dragSound, painterController.logDragSound);
+        _playSound(flickSound, painterController.logFlickSound);
       }
     })..start();
     painterController.setupTime();
+    widget.controller.setSpeed(1.0);
     this.painterController = painterController;
     phasetida.resetNoteState(beforeTimeInSecond: 0);
     setState(() {
@@ -221,10 +287,64 @@ class _PhigrosSimulatorRenderWidgetState
       return SizedBox.shrink();
     }
     return RepaintBoundary(
-      child: CustomPaint(
-        key: _canvasKey,
-        painter: _painter,
-        size: Size.infinite,
+      child: Listener(
+        onPointerDown: (e) {
+          if (painterController?._auto != false) {
+            return;
+          }
+          final position = _painter?.viewport.unProject(
+            e.localPosition.dx,
+            e.localPosition.dy,
+          );
+          if (position == null) return;
+          final (x, y) = position;
+          int index = inputContainer.touchDown(e.pointer);
+          if (index == -1) {
+            return;
+          }
+          phasetida.touchAction(state: 0, id: index, x: x, y: y);
+        },
+        onPointerMove: (e) {
+          if (painterController?._auto != false) {
+            return;
+          }
+          final position = _painter?.viewport.unProject(
+            e.localPosition.dx,
+            e.localPosition.dy,
+          );
+          if (position == null) return;
+          final (x, y) = position;
+          int index = inputContainer.touchMove(e.pointer);
+          if (index == -1) {
+            return;
+          }
+          phasetida.touchAction(state: 1, id: index, x: x, y: y);
+        },
+        onPointerCancel: (e) {
+          if (painterController?._auto != false) {
+            return;
+          }
+          int index = inputContainer.touchUp(e.pointer);
+          if (index == -1) {
+            return;
+          }
+          phasetida.touchAction(state: 2, id: index, x: 0, y: 0);
+        },
+        onPointerUp: (e) {
+          if (painterController?._auto != false) {
+            return;
+          }
+          int index = inputContainer.touchUp(e.pointer);
+          if (index == -1) {
+            return;
+          }
+          phasetida.touchAction(state: 2, id: index, x: 0, y: 0);
+        },
+        child: CustomPaint(
+          key: _canvasKey,
+          painter: _painter,
+          size: Size.infinite,
+        ),
       ),
     );
   }
@@ -232,6 +352,8 @@ class _PhigrosSimulatorRenderWidgetState
   @override
   void dispose() {
     _reDrawTicker?.dispose();
+    musicTimeSub?.cancel();
+    musicSpeedSub?.cancel();
     super.dispose();
   }
 }
@@ -279,6 +401,7 @@ class PainterController {
   double clickScale = 1.0;
   double splashScale = 1.0;
 
+  bool _auto = true;
   bool showHighlight = true;
 
   final ui.Image tapImage;
@@ -295,6 +418,8 @@ class PainterController {
   final List<ui.Image> splashImages;
   final List<ui.Image> clickImages;
 
+  final double offset;
+
   PainterController({
     required this.tapImage,
     required this.tapHighlightImage,
@@ -309,6 +434,7 @@ class PainterController {
     required this.holdEndImage,
     required this.splashImages,
     required this.clickImages,
+    required this.offset,
   });
 
   void setupTime() {
@@ -340,17 +466,19 @@ class PainterController {
     _startTime = now - time / _speed;
     _lastTime = 0.0;
     phasetida.resetNoteState(beforeTimeInSecond: time);
+    phasetida.resetTouchState();
   }
 }
 
 class _Painter extends CustomPainter {
-  final _Viewport _viewport = _Viewport(1920.0, 1080.0);
+  final _Viewport viewport = _Viewport(1920.0, 1080.0);
 
   late final ui.Paint _linePainter;
   late final ui.Paint _backgroundPainter;
   late final ui.Paint _notePainter;
   late final ui.Paint _perfectPaint;
   late final ui.Paint _goodPaint;
+  late final ui.Paint _clickPaint;
 
   final PainterController controller;
 
@@ -371,37 +499,42 @@ class _Painter extends CustomPainter {
       Color.fromARGB(255, 168, 239, 246),
       BlendMode.modulate,
     );
+    _clickPaint = ui.Paint();
+    _clickPaint.color = Color.fromARGB(128, 255, 255, 255);
+    _clickPaint.style = PaintingStyle.stroke;
+    _clickPaint.strokeWidth = 5;
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    _viewport.update(size.width, size.height);
+    viewport.update(size.width, size.height);
     final now = DateTime.timestamp().millisecondsSinceEpoch / 1000.0;
     final time =
         (controller._lastChangeSpeedTime +
-        (now - controller._startTime) * controller._speed);
+            (now - controller._startTime) * controller._speed) -
+        controller.offset;
     final deltaTime = max(time - controller._lastTime, 0.0);
     final bufferWrapper = phasetida.tickLines(
       timeInSecond: time,
       deltaTimeInSecond: deltaTime,
-      auto: true,
+      auto: controller._auto,
     );
     controller._lastTime = time;
-    final (pw, ph) = _viewport.project(1920.0, 1080.0);
+    final (pw, ph) = viewport.project(1920.0, 1080.0);
 
     canvas.drawRect(Rect.fromLTWH(0, 0, pw, ph), _backgroundPainter);
     canvas.clipRect(Rect.fromLTWH(0, 0, pw, ph));
     final reader = ByteDataReader(endian: Endian.little);
-    _linePainter.strokeWidth = _viewport.projectSize(10.0);
+    _linePainter.strokeWidth = viewport.projectSize(10.0);
     reader.add(bufferWrapper.inner);
 
-    final noteScale = _viewport.projectSize(
+    final noteScale = viewport.projectSize(
       controller.globalScale * controller._noteScale,
     );
-    final clickScale = _viewport.projectSize(
+    final clickScale = viewport.projectSize(
       controller.clickScale * controller.globalScale,
     );
-    final splashScale = _viewport.projectSize(
+    final splashScale = viewport.projectSize(
       controller.splashScale * controller.globalScale,
     );
     while (true) {
@@ -417,8 +550,8 @@ class _Painter extends CustomPainter {
             final x2 = reader.readFloat32();
             final y2 = reader.readFloat32();
             final alpha = reader.readFloat32();
-            final (px1, py1) = _viewport.project(x1, y1);
-            final (px2, py2) = _viewport.project(x2, y2);
+            final (px1, py1) = viewport.project(x1, y1);
+            final (px2, py2) = viewport.project(x2, y2);
             _linePainter.color = _linePainter.color.withAlpha(
               (alpha * 255.0).toInt(),
             );
@@ -433,7 +566,7 @@ class _Painter extends CustomPainter {
             final height = reader.readFloat32();
             final highlight = reader.readUint8();
             final isHighlight = highlight != 0 && controller.showHighlight;
-            final (px, py) = _viewport.project(x, y);
+            final (px, py) = viewport.project(x, y);
             final noteImage = switch (noteType) {
               1 =>
                 isHighlight
@@ -460,7 +593,7 @@ class _Painter extends CustomPainter {
             };
             final verticalScale = noteType != 6
                 ? noteScale
-                : _viewport.projectSize(height) / noteImage.height;
+                : viewport.projectSize(height) / noteImage.height;
             noteImage.draw(
               canvas,
               px,
@@ -477,7 +610,7 @@ class _Painter extends CustomPainter {
             final y = reader.readFloat32();
             final frame = reader.readUint8();
             final tintType = reader.readUint8();
-            final (px, py) = _viewport.project(x, y);
+            final (px, py) = viewport.project(x, y);
             controller.clickImages[frame].draw(
               canvas,
               px,
@@ -490,8 +623,10 @@ class _Painter extends CustomPainter {
           }
         case 4:
           {
-            reader.readFloat32();
-            reader.readFloat32();
+            final x = reader.readFloat32();
+            final y = reader.readFloat32();
+            final (px, py) = viewport.project(x, y);
+            canvas.drawCircle(Offset(px, py), 75, _clickPaint);
           }
         case 5:
           {
@@ -510,7 +645,7 @@ class _Painter extends CustomPainter {
             final y = reader.readFloat32();
             final frame = reader.readUint8();
             final tintType = reader.readUint8();
-            final (px, py) = _viewport.project(x, y);
+            final (px, py) = viewport.project(x, y);
             controller.splashImages[frame].draw(
               canvas,
               px,
