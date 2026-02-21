@@ -9,7 +9,7 @@ late Uint8List songBuffer;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PhasetidaFlutter.init();
-  jsonData = await rootBundle.loadString("assets/testv1.json");
+  jsonData = await rootBundle.loadString("assets/test.json");
   songBuffer = (await rootBundle.load("assets/song.ogg")).buffer.asUint8List();
   await FullScreen.ensureInitialized();
   FullScreen.setFullScreen(true);

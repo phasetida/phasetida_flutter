@@ -5,7 +5,7 @@ use phasetida_core::BufferWithCursor;
 const BUFFER_SIZE: usize = 16384;
 
 thread_local! {
-    static DRAW_BUFFER: RefCell<[u8; 16384]> = RefCell::new([0;16384]);
+    static DRAW_BUFFER: RefCell<[u8; 16384]> = const { RefCell::new([0;16384]) };
 }
 
 #[flutter_rust_bridge::frb(sync)]
@@ -16,7 +16,7 @@ pub fn greet(name: String) -> String {
 #[flutter_rust_bridge::frb(sync)]
 pub fn load_level(json: String) -> Result<(f64, f64, i32), String> {
     phasetida_core::clear_states();
-    phasetida_core::init_line_states_from_json(json)
+    phasetida_core::init_line_states_from_json(json.as_str())
         .map(|it| (it.length_in_second, it.offset, it.format_version))
         .map_err(|it| it.to_string())
 }
