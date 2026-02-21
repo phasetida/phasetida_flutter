@@ -95,6 +95,25 @@ class _PhigrosSimulatorRenderWidgetState
 
   Ticker? _reDrawTicker;
 
+  AudioSource? tapSound;
+  AudioSource? dragSound;
+  AudioSource? flickSound;
+  AudioSource? songSource;
+  SoundHandle? songHandle;
+  ui.Image? tapImage;
+  ui.Image? tapHighlightImage;
+  ui.Image? dragImage;
+  ui.Image? dragHighlightImage;
+  ui.Image? flickImage;
+  ui.Image? flickHighlightImage;
+  ui.Image? holdHeadImage;
+  ui.Image? holdHeadHighlightImage;
+  ui.Image? holdBodyImage;
+  ui.Image? holdBodyHighlightImage;
+  ui.Image? holdEndImage;
+  List<ui.Image>? splashImages;
+  List<ui.Image>? clickImages;
+
   @override
   void initState() {
     super.initState();
@@ -120,11 +139,6 @@ class _PhigrosSimulatorRenderWidgetState
     ui.Image holdEndImage;
     List<ui.Image> splashImages;
     List<ui.Image> clickImages;
-    AudioSource? tapSound;
-    AudioSource? dragSound;
-    AudioSource? flickSound;
-    AudioSource? songSource;
-    SoundHandle? songHandle;
     Duration? songLength;
     try {
       final metadata = phasetida.loadLevel(json: widget.levelJson);
@@ -154,6 +168,19 @@ class _PhigrosSimulatorRenderWidgetState
       clickImages = await Future.wait(
         List.generate(30, (i) async => _loadImage("clicks/click$i.png")),
       );
+      this.tapImage = tapImage;
+      this.tapHighlightImage = tapHighlightImage;
+      this.dragImage = dragImage;
+      this.dragHighlightImage = dragHighlightImage;
+      this.flickImage = flickImage;
+      this.flickHighlightImage = flickHighlightImage;
+      this.holdHeadImage = holdHeadImage;
+      this.holdHeadHighlightImage = holdHeadHighlightImage;
+      this.holdBodyImage = holdBodyImage;
+      this.holdBodyHighlightImage = holdBodyHighlightImage;
+      this.holdEndImage = holdEndImage;
+      this.splashImages = splashImages;
+      this.clickImages = clickImages;
     } catch (e) {
       widget.controller.isLoading.value = false;
       widget.controller.loadError.value = "failed to load image: $e";
@@ -173,20 +200,26 @@ class _PhigrosSimulatorRenderWidgetState
       widget.controller.soundError.value = "failed to load effect sound: $e";
     }
     try {
-      songSource = await SoLoud.instance.loadMem("song.ogg", widget.songBuffer);
+      final songSource = await SoLoud.instance.loadMem(
+        "song.ogg",
+        widget.songBuffer,
+      );
       songLength = SoLoud.instance.getLength(songSource);
       musicTotalTime = songLength.inMilliseconds / 1000.0;
-      songHandle = await SoLoud.instance.play(
+      final songHandle = await SoLoud.instance.play(
         songSource,
         paused: false,
         looping: true,
         loopingStartAt: songLength,
       );
       SoLoud.instance.setRelativePlaySpeed(songHandle, 0.0000001);
+      this.songSource = songSource;
+      this.songHandle = songHandle;
     } catch (e) {
       widget.controller.soundError.value = "failed to load game sound: $e";
     }
     musicTimeSub = widget.controller.musicTimeController.stream.listen((time) {
+      final songHandle = this.songHandle;
       if (songHandle != null && songLength != null) {
         final lengthInMillisecond = songLength.inMilliseconds - 10;
         SoLoud.instance.setPause(songHandle, false);
@@ -201,6 +234,7 @@ class _PhigrosSimulatorRenderWidgetState
     musicSpeedSub = widget.controller.musicSpeedController.stream.listen((
       speed,
     ) {
+      final songHandle = this.songHandle;
       if (songHandle != null) {
         SoLoud.instance.setRelativePlaySpeed(songHandle, speed);
       }
@@ -349,11 +383,42 @@ class _PhigrosSimulatorRenderWidgetState
     );
   }
 
+  void _disposeSound(AudioSource? source) {
+    if (source != null) {
+      try {
+        SoLoud.instance.disposeSource(source);
+      } catch (_) {}
+    }
+  }
+
   @override
   void dispose() {
     _reDrawTicker?.dispose();
     musicTimeSub?.cancel();
     musicSpeedSub?.cancel();
+    final songHandle = this.songHandle;
+    if (songHandle != null) {
+      try {
+        SoLoud.instance.stop(songHandle);
+      } catch (_) {}
+    }
+    _disposeSound(tapSound);
+    _disposeSound(dragSound);
+    _disposeSound(flickSound);
+    _disposeSound(songSource);
+    tapImage?.dispose();
+    tapHighlightImage?.dispose();
+    dragImage?.dispose();
+    dragHighlightImage?.dispose();
+    flickImage?.dispose();
+    flickHighlightImage?.dispose();
+    holdHeadImage?.dispose();
+    holdHeadHighlightImage?.dispose();
+    holdBodyImage?.dispose();
+    holdBodyHighlightImage?.dispose();
+    holdEndImage?.dispose();
+    splashImages?.forEach((it) => it.dispose());
+    clickImages?.forEach((it) => it.dispose());
     super.dispose();
   }
 }
