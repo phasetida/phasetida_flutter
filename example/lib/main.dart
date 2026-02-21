@@ -4,11 +4,13 @@ import 'package:flutter_fullscreen/flutter_fullscreen.dart';
 import 'package:phasetida_flutter/phasetida_flutter.dart';
 
 late String jsonData;
+late Uint8List songBuffer;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PhasetidaFlutter.init();
   jsonData = await rootBundle.loadString("assets/test.json");
+  songBuffer = (await rootBundle.load("assets/song.ogg")).buffer.asUint8List();
   await FullScreen.ensureInitialized();
   FullScreen.setFullScreen(true);
   SystemChrome.setPreferredOrientations([
@@ -31,6 +33,7 @@ class MyApp extends StatelessWidget {
           songName: "RR",
           author: "TG",
           chartComposer: "X",
+          songBuffer: songBuffer,
           quitCallback: () => {},
         ),
       ),

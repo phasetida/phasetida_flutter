@@ -5,7 +5,7 @@ use phasetida_core::BufferWithCursor;
 const BUFFER_SIZE: usize = 16384;
 
 thread_local! {
-    static DRAW_BUFFER: RefCell<[u8; 16384]> = RefCell::new([0;16384]);
+    static DRAW_BUFFER: RefCell<[u8; 16384]> = const { RefCell::new([0;16384]) };
 }
 
 #[flutter_rust_bridge::frb(sync)]
@@ -14,11 +14,11 @@ pub fn greet(name: String) -> String {
 }
 
 #[flutter_rust_bridge::frb(sync)]
-pub fn load_level(json: String) -> Option<f64> {
+pub fn load_level(json: String) -> Result<(f64, f64, i32), String> {
     phasetida_core::clear_states();
-    serde_json::from_str(json.as_str())
-        .ok()
-        .map(|it| phasetida_core::init_line_states(it).length_in_second)
+    phasetida_core::init_line_states_from_json(json.as_str())
+        .map(|it| (it.length_in_second, it.offset, it.format_version))
+        .map_err(|it| it.to_string())
 }
 
 #[flutter_rust_bridge::frb(sync)]
@@ -32,6 +32,17 @@ pub fn tick_lines(time_in_second: f64, delta_time_in_second: f64, auto: bool) ->
         phasetida_core::process_state_to_drawable(&mut buffer);
         it.clone()
     })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn touch_action(state: u8, id: u8, x: f32, y: f32) {
+    let id = id as usize;
+    match state {
+        0 => phasetida_core::set_touch_down(id, x, y),
+        1 => phasetida_core::set_touch_move(id, x, y),
+        2 => phasetida_core::set_touch_up(id),
+        _ => {}
+    };
 }
 
 #[flutter_rust_bridge::frb(sync)]
@@ -57,6 +68,11 @@ pub fn get_buffer_size() -> usize {
 #[flutter_rust_bridge::frb(sync)]
 pub fn reset_note_state(before_time_in_second: f64) {
     phasetida_core::reset_note_state(before_time_in_second);
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn reset_touch_state() {
+    phasetida_core::clear_touch();
 }
 
 #[flutter_rust_bridge::frb(sync)]
