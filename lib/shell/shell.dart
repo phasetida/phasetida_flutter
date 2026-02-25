@@ -113,21 +113,27 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      endDrawer: Drawer(child: _ShellSideMenu(_viewModel, widget.quitCallback)),
-      body: RepaintBoundary(
-        child: ValueListenableBuilder(
-          valueListenable: _viewModel.controller.isLoading,
-          builder: (_, isLoading, _) => ValueListenableBuilder(
-            valueListenable: _viewModel.controller.loadError,
-            builder: (_, loadError, _) => AnimatedCrossFade(
-              crossFadeState: (isLoading || loadError != null)
-                  ? CrossFadeState.showFirst
-                  : CrossFadeState.showSecond,
-              duration: Duration(milliseconds: 250),
-              firstChild: _loadingBody(context),
-              secondChild: _playerBody(context),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        endDrawer: Drawer(
+          child: _ShellSideMenu(_viewModel, widget.quitCallback),
+        ),
+        endDrawerEnableOpenDragGesture: false,
+        body: RepaintBoundary(
+          child: ValueListenableBuilder(
+            valueListenable: _viewModel.controller.isLoading,
+            builder: (_, isLoading, _) => ValueListenableBuilder(
+              valueListenable: _viewModel.controller.loadError,
+              builder: (_, loadError, _) => AnimatedCrossFade(
+                crossFadeState: (isLoading || loadError != null)
+                    ? CrossFadeState.showFirst
+                    : CrossFadeState.showSecond,
+                duration: Duration(milliseconds: 250),
+                firstChild: _loadingBody(context),
+                secondChild: _playerBody(context),
+              ),
             ),
           ),
         ),
