@@ -375,8 +375,9 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
   }
 
   void _updateSpeed() {
-    if (_viewModel.paused.value) {
-      _viewModel.controller.setSpeed(0.00001);
+    final paused = _viewModel.paused.value;
+    _viewModel.controller.setPaused(paused);
+    if (paused) {
       return;
     }
     if (_viewModel.isLongPressing.value) {
