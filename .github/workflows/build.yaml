@@ -1,0 +1,162 @@
+name: Build and Release Flutter app
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  android-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Remove lock
+        working-directory: example
+        run: |
+          rm -f pubspec.lock 
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.9'
+
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+
+      - name: Decode keystore from secrets
+        working-directory: example
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        working-directory: example
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=upload-keystore.jks
+          EOF
+
+      - name: Build signed APK per abi
+        working-directory: example
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build signed APK universal
+        working-directory: example
+        run: |
+          flutter build apk --release
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-universal-release.apk
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: |
+            example/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            example/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            example/build/app/outputs/flutter-apk/app-x86_64-release.apk
+            example/build/app/outputs/flutter-apk/app-universal-release.apk
+
+  ios-build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Remove lock
+        working-directory: example
+        run: |
+          rm -f pubspec.lock
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.9'
+
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+
+      - name: Build iOS (no codesign)
+        working-directory: example
+        run: flutter build ios --no-codesign --release
+
+      - name: Package app as unsigned IPA
+        working-directory: example
+        run: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -R Runner.app Payload/
+          zip -r ios-unsigned.ipa Payload
+
+      - name: Upload IPA as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned
+          path: example/build/ios/iphoneos/ios-unsigned.ipa
+
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Remove lock
+        working-directory: example
+        run: |
+          rm -f pubspec.lock
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.9'
+
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+
+      - name: Build Windows
+        working-directory: example
+        run: flutter build windows --release
+
+      - name: Packing Windows app
+        working-directory: example
+        run: Compress-Archive -Path build/windows/x64/runner/Release -DestinationPath windows-x64.zip
+
+      - name: Upload Windows package as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: example/windows-x64.zip
