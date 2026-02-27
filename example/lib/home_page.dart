@@ -18,7 +18,7 @@ class HomePage extends StatelessWidget {
           Text("「而常世之人却一厢情愿」", style: textTheme.titleLarge),
           SizedBox(height: 32,),
           Text("phasetida_flutter/phasetida-core: $phasetidaFlutterVersion/$phasetidaCoreVersion"),
-          Text("Resources powered by somnia.xtower.site"),
+          Text("Resources are powered by somnia.xtower.site"),
         ],
       ),
     );
