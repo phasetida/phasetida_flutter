@@ -7,7 +7,7 @@ export 'shell/shell.dart' show PhigrosChartPlayerShellWidget;
 export 'simulator/simulator.dart' show PhigrosSimulatorRenderWidget;
 
 const String phasetidaFlutterVersion = "0.3.1";
-const String phasetidaCoreVersion = "0.1.14";
+const String phasetidaCoreVersion = "0.1.15";
 
 class PhasetidaFlutter {
   static Future<void> init() async {

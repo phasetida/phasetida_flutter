@@ -6,9 +6,6 @@ class PainterController {
   int? logMaxCombo;
   double? logScore;
   double? logAccurate;
-  int? logTapSound;
-  int? logDragSound;
-  int? logFlickSound;
   int? logBufferUsage;
 
   double _startTime = 0;
@@ -41,6 +38,8 @@ class PainterController {
   final List<ui.Image> clickImages;
   final double offset;
 
+  void Function(int, int, int) soundTick;
+
   PainterController({
     required this.tapImage,
     required this.tapHighlightImage,
@@ -56,6 +55,7 @@ class PainterController {
     required this.splashImages,
     required this.clickImages,
     required this.offset,
+    required this.soundTick,
   });
 
   void setupTime() {
@@ -292,9 +292,7 @@ class _Painter extends CustomPainter {
             final tapSound = reader.readUint8();
             final dragSound = reader.readUint8();
             final flickSound = reader.readUint8();
-            controller.logTapSound = tapSound;
-            controller.logDragSound = dragSound;
-            controller.logFlickSound = flickSound;
+            controller.soundTick(tapSound, dragSound, flickSound);
           }
         default:
           throw Exception(

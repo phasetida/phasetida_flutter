@@ -8,7 +8,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 flutter_rust_bridge = "=2.11.1"
-phasetida-core = { git = "https://github.com/phasetida/phasetida-core.git", tag = "0.1.14" }
+phasetida-core = { git = "https://github.com/phasetida/phasetida-core.git", tag = "0.1.15" }
 serde = { version = "1.0.228", features = ["derive"] }
 
 [lints.rust]

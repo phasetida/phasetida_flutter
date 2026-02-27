@@ -45,9 +45,6 @@ class PhigrosSimulatorRenderController {
   ValueNotifier<int> logMaxCombo = ValueNotifier(0);
   ValueNotifier<double> logScore = ValueNotifier(0);
   ValueNotifier<double> logAccurate = ValueNotifier(0);
-  ValueNotifier<int> logTapSound = ValueNotifier(0);
-  ValueNotifier<int> logDragSound = ValueNotifier(0);
-  ValueNotifier<int> logFlickSound = ValueNotifier(0);
   ValueNotifier<int> logBufferUsage = ValueNotifier(0);
   ValueNotifier<bool> isLoading = ValueNotifier(true);
   ValueNotifier<String?> loadError = ValueNotifier(null);
@@ -61,6 +58,10 @@ class PhigrosSimulatorRenderController {
 
   void setTime(double time) {
     _painterController?.setTime(time);
+    setMusicTime(time);
+  }
+
+  void setMusicTime(double time) {
     musicTimeController.add(time);
   }
 
@@ -196,15 +197,22 @@ class _PhigrosSimulatorRenderWidgetState
       return;
     }
     try {
-      tapSound = await SoLoud.instance.loadAsset(
+      SoLoud.instance.setMaxActiveVoiceCount(16 * 3 + 2);
+      final tapSound = await SoLoud.instance.loadAsset(
         "packages/phasetida_flutter/assets/sound/hitSong0.wav",
+        mode: LoadMode.memory,
       );
-      dragSound = await SoLoud.instance.loadAsset(
+      final dragSound = await SoLoud.instance.loadAsset(
         "packages/phasetida_flutter/assets/sound/hitSong1.wav",
+        mode: LoadMode.memory,
       );
-      flickSound = await SoLoud.instance.loadAsset(
+      final flickSound = await SoLoud.instance.loadAsset(
         "packages/phasetida_flutter/assets/sound/hitSong2.wav",
+        mode: LoadMode.memory,
       );
+      this.tapSound = tapSound;
+      this.dragSound = dragSound;
+      this.flickSound = flickSound;
     } catch (e) {
       widget.controller.soundError.value = "failed to load effect sound: $e";
     }
@@ -212,16 +220,16 @@ class _PhigrosSimulatorRenderWidgetState
       final songSource = await SoLoud.instance.loadMem(
         "song.ogg",
         widget.songBuffer,
+        mode: LoadMode.memory,
       );
       songLength = SoLoud.instance.getLength(songSource);
       musicTotalTime = songLength.inMilliseconds / 1000.0;
       final songHandle = await SoLoud.instance.play(
         songSource,
-        paused: false,
+        paused: true,
         looping: true,
         loopingStartAt: songLength,
       );
-      SoLoud.instance.setRelativePlaySpeed(songHandle, 0.0000001);
       this.songSource = songSource;
       this.songHandle = songHandle;
     } catch (e) {
@@ -230,7 +238,7 @@ class _PhigrosSimulatorRenderWidgetState
     musicTimeSub = widget.controller.musicTimeController.stream.listen((time) {
       final songHandle = this.songHandle;
       if (songHandle != null && songLength != null) {
-        final lengthInMillisecond = songLength.inMilliseconds - 10;
+        final lengthInMillisecond = songLength.inMilliseconds - 5;
         SoLoud.instance.setPause(songHandle, false);
         SoLoud.instance.seek(
           songHandle,
@@ -271,6 +279,13 @@ class _PhigrosSimulatorRenderWidgetState
       splashImages: splashImages,
       clickImages: clickImages,
       offset: offset,
+      soundTick: (logTapSound, logDragSound, logFlickSound) {
+        if (widget.controller._enableSound) {
+          _playSound(tapSound, logTapSound);
+          _playSound(dragSound, logDragSound);
+          _playSound(flickSound, logFlickSound);
+        }
+      },
     );
     painterController.setNoteScale(0.25);
     painterController.clickScale = 1.5;
@@ -291,21 +306,12 @@ class _PhigrosSimulatorRenderWidgetState
       widget.controller.logMaxCombo.value = painterController.logMaxCombo ?? 0;
       widget.controller.logScore.value = painterController.logScore ?? 0;
       widget.controller.logAccurate.value = painterController.logAccurate ?? 0;
-      widget.controller.logTapSound.value = painterController.logTapSound ?? 0;
-      widget.controller.logDragSound.value =
-          painterController.logDragSound ?? 0;
-      widget.controller.logFlickSound.value =
-          painterController.logFlickSound ?? 0;
       widget.controller.logBufferUsage.value =
           painterController.logBufferUsage ?? 0;
-      if (widget.controller._enableSound) {
-        _playSound(tapSound, painterController.logTapSound);
-        _playSound(dragSound, painterController.logDragSound);
-        _playSound(flickSound, painterController.logFlickSound);
-      }
     })..start();
     painterController.setupTime();
     widget.controller.setSpeed(1.0);
+    widget.controller.setPaused(false);
     this.painterController = painterController;
     phasetida.resetNoteState(beforeTimeInSecond: 0);
     setState(() {
