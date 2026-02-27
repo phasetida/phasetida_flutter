@@ -44,6 +44,7 @@ class _ShellBottomControllerState extends State<_ShellBottomController> {
                 } else {
                   viewModel.paused.value = !viewModel.paused.value;
                 }
+                controller.setMusicTime(controller.logTime.value);
                 state._updateSpeed();
               },
               icon: ValueListenableBuilder(
@@ -93,6 +94,7 @@ class _ShellBottomControllerState extends State<_ShellBottomController> {
                     onChangeEnd: (v) {
                       state._onUserInteraction();
                       controller.setTime(v);
+                      state._updateSpeed();
                       _sliding = false;
                       _slideTime = v;
                     },

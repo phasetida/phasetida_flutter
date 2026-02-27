@@ -139,7 +139,10 @@ class _ShellSideMenu extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: OutlinedButton(
-              onPressed: quitCallback,
+              onPressed: () {
+                Navigator.pop(context);
+                quitCallback();
+              },
               child: const SizedBox(
                 width: double.infinity,
                 child: Center(child: Text("退出铺面预览")),
