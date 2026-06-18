@@ -87,6 +87,10 @@ class PhigrosSimulatorRenderController {
   void setEnableSound(bool enableSound) {
     _enableSound = enableSound;
   }
+
+  void setWorldSize(double worldWidth, double worldHeight){
+    _painterController?.setWorldSize(worldWidth, worldHeight);
+  }
 }
 
 class _PhigrosSimulatorRenderWidgetState

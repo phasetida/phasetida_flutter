@@ -8,6 +8,9 @@ class PainterController {
   double? logAccurate;
   int? logBufferUsage;
 
+  double worldWidth = 1920.0;
+  double worldHeight = 1080.0;
+
   double _startTime = 0;
   double _lastTime = 0;
   double _lastChangeSpeedTime = 0;
@@ -99,6 +102,12 @@ class PainterController {
     }
     _paused = paused;
   }
+
+  void setWorldSize(double worldWidth, double worldHeight) {
+    this.worldWidth = worldWidth;
+    this.worldHeight = worldHeight;
+    phasetida.setWorldSize(width: worldWidth, height: worldHeight);
+  }
 }
 
 class _Painter extends CustomPainter {
@@ -138,6 +147,8 @@ class _Painter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    viewport.worldWidth = controller.worldWidth;
+    viewport.worldHeight = controller.worldHeight;
     viewport.update(size.width, size.height);
     final now = DateTime.timestamp().millisecondsSinceEpoch / 1000.0;
     final time =
@@ -151,7 +162,10 @@ class _Painter extends CustomPainter {
       auto: controller._auto,
     );
     controller._lastTime = time;
-    final (pw, ph) = viewport.project(1920.0, 1080.0);
+    final (pw, ph) = viewport.project(
+      controller.worldWidth,
+      controller.worldHeight,
+    );
 
     canvas.drawRect(Rect.fromLTWH(0, 0, pw, ph), _backgroundPainter);
     canvas.clipRect(Rect.fromLTWH(0, 0, pw, ph));

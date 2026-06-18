@@ -35,6 +35,11 @@ pub fn tick_lines(time_in_second: f64, delta_time_in_second: f64, auto: bool) ->
 }
 
 #[flutter_rust_bridge::frb(sync)]
+pub fn set_world_size(width: f64, height: f64) {
+    phasetida_core::init_world_rect(width, height);
+}
+
+#[flutter_rust_bridge::frb(sync)]
 pub fn touch_action(state: u8, id: u8, x: f32, y: f32) {
     let id = id as usize;
     match state {

@@ -22,7 +22,7 @@ class InputContainer {
     });
   }
 
-  int _findFirstAvailable(int? serial, Function(int index, _Touch touch) fun) {
+  int _findFirstAvailable(int? serial, int Function(int index, _Touch touch) fun) {
     for (final (i, touch) in _touches.indexed) {
       if (serial != null
           ? (touch.enable && touch.serial == serial)
