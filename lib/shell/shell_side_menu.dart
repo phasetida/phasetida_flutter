@@ -96,6 +96,23 @@ class _ShellSideMenu extends StatelessWidget {
                 ),
                 const Divider(),
                 ValueListenableBuilder(
+                  valueListenable: viewModel.screenRatio,
+                  builder: (_, ratio, _) => SegmentedButton<Ratio>(
+                    segments: const [
+                      ButtonSegment(value: Ratio.r169, label: Text("16:9")),
+                      ButtonSegment(value: Ratio.r43, label: Text("4:3")),
+                      ButtonSegment(value: Ratio.r1610, label: Text("16:10")),
+                    ],
+                    selected: {ratio},
+                    onSelectionChanged: (v) {
+                      final currentRatio = v.first;
+                      viewModel.screenRatio.value = currentRatio;
+                      final worldSize = currentRatio.getSize();
+                      controller.setWorldSize(worldSize.$1, worldSize.$2);
+                    },
+                  ),
+                ),
+                ValueListenableBuilder(
                   valueListenable: viewModel.enableTouch,
                   builder: (_, enableTouch, _) => SwitchListTile(
                     title: const Text("锁屏可打"),

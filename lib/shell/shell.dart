@@ -51,6 +51,7 @@ class _PhigrosChartPlayerShellViewModel {
   ValueNotifier<bool> paused = ValueNotifier(false);
   ValueNotifier<Speed> speedSelection = ValueNotifier(Speed.x100);
   ValueNotifier<bool> isLongPressing = ValueNotifier(false);
+  ValueNotifier<Ratio> screenRatio = ValueNotifier(Ratio.r169);
 }
 
 class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
@@ -187,19 +188,25 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
     return Stack(
       children: [
         Center(
-          child: AspectRatio(
-            aspectRatio: 1920.0 / 1080.0,
-            child: PhigrosSimulatorRenderWidget(
-              controller: _viewModel.controller,
-              levelJson: widget.jsonData,
-              songBuffer: widget.songBuffer,
-              onLoad: (totalTime, offset, formatVersion, bufferSize) {
-                _viewModel.totalTime.value = totalTime;
-                _viewModel.offset.value = offset;
-                _viewModel.formatVersion.value = formatVersion;
-                _viewModel.bufferSize.value = bufferSize;
-              },
-            ),
+          child: ValueListenableBuilder(
+            valueListenable: _viewModel.screenRatio,
+            builder: (_, ratio, _) {
+              final ratioValue = ratio.getSize();
+              return AspectRatio(
+                aspectRatio: ratioValue.$1 / ratioValue.$2,
+                child: PhigrosSimulatorRenderWidget(
+                  controller: _viewModel.controller,
+                  levelJson: widget.jsonData,
+                  songBuffer: widget.songBuffer,
+                  onLoad: (totalTime, offset, formatVersion, bufferSize) {
+                    _viewModel.totalTime.value = totalTime;
+                    _viewModel.offset.value = offset;
+                    _viewModel.formatVersion.value = formatVersion;
+                    _viewModel.bufferSize.value = bufferSize;
+                  },
+                ),
+              );
+            },
           ),
         ),
         ValueListenableBuilder(
@@ -396,3 +403,15 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
 }
 
 enum Speed { x025, x050, x075, x100, x125 }
+
+enum Ratio { r169, r43, r1610 }
+
+extension on Ratio {
+  (double, double) getSize() {
+    return switch (this) {
+      Ratio.r169 => (1920.0, 1080.0),
+      Ratio.r43 => (2048.0, 1536.0),
+      Ratio.r1610 => (2400.0, 1080.0),
+    };
+  }
+}

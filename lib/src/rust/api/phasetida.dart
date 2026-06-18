@@ -26,6 +26,11 @@ U8Array16384 tickLines({
   auto: auto,
 );
 
+void setWorldSize({required double width, required double height}) => RustLib
+    .instance
+    .api
+    .crateApiPhasetidaSetWorldSize(width: width, height: height);
+
 void touchAction({
   required int state,
   required int id,

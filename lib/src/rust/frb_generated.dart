@@ -66,7 +66,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 446837626;
+  int get rustContentHash => 1058284139;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -97,6 +97,11 @@ abstract class RustLibApi extends BaseApi {
   void crateApiPhasetidaResetNoteState({required double beforeTimeInSecond});
 
   void crateApiPhasetidaResetTouchState();
+
+  void crateApiPhasetidaSetWorldSize({
+    required double width,
+    required double height,
+  });
 
   U8Array16384 crateApiPhasetidaTickLines({
     required double timeInSecond,
@@ -330,6 +335,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "reset_touch_state", argNames: []);
 
   @override
+  void crateApiPhasetidaSetWorldSize({
+    required double width,
+    required double height,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_f_64(width, serializer);
+          sse_encode_f_64(height, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPhasetidaSetWorldSizeConstMeta,
+        argValues: [width, height],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPhasetidaSetWorldSizeConstMeta =>
+      const TaskConstMeta(
+        debugName: "set_world_size",
+        argNames: ["width", "height"],
+      );
+
+  @override
   U8Array16384 crateApiPhasetidaTickLines({
     required double timeInSecond,
     required double deltaTimeInSecond,
@@ -342,7 +377,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_f_64(timeInSecond, serializer);
           sse_encode_f_64(deltaTimeInSecond, serializer);
           sse_encode_bool(auto, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_u_8_array_16384,
@@ -375,7 +410,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_u_8(id, serializer);
           sse_encode_f_32(x, serializer);
           sse_encode_f_32(y, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 11)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
