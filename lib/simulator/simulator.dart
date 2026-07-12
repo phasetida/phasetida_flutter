@@ -228,7 +228,7 @@ class _PhigrosSimulatorRenderWidgetState
       );
       songLength = SoLoud.instance.getLength(songSource);
       musicTotalTime = songLength.inMilliseconds / 1000.0;
-      final songHandle = await SoLoud.instance.play(
+      final songHandle = SoLoud.instance.play(
         songSource,
         paused: true,
         looping: true,
