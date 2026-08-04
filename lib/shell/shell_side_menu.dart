@@ -121,6 +121,7 @@ class _ShellSideMenu extends StatelessWidget {
                     ),
                     value: enableTouch,
                     onChanged: (v) {
+                      phasetida.resetTouchState();
                       viewModel.enableTouch.value = v;
                       controller.setAutoPlay(
                         v ? !viewModel.isLocked.value : true,

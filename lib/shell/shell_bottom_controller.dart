@@ -13,6 +13,7 @@ class _ShellBottomController extends StatefulWidget {
 class _ShellBottomControllerState extends State<_ShellBottomController> {
   double _slideTime = 0;
   bool _sliding = false;
+  bool _pauseTemp = false;
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +21,7 @@ class _ShellBottomControllerState extends State<_ShellBottomController> {
     final state = widget.state;
     final colorTheme = Theme.of(context);
     final controller = viewModel.controller;
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -81,18 +83,23 @@ class _ShellBottomControllerState extends State<_ShellBottomController> {
                         : 1.0,
                     onChangeStart: (v) {
                       state._onUserInteraction();
+                      _pauseTemp = viewModel.paused.value;
+                      viewModel.paused.value = true;
                       setState(() {
                         _sliding = true;
                         _slideTime = time;
                       });
                       state._hideTimer?.cancel();
+                      state._updateSpeed();
                     },
                     onChanged: (v) {
                       controller.setTime(v);
                       _slideTime = v;
+                      state._updateSpeed();
                     },
                     onChangeEnd: (v) {
                       state._onUserInteraction();
+                      viewModel.paused.value = _pauseTemp;
                       controller.setTime(v);
                       state._updateSpeed();
                       _sliding = false;
