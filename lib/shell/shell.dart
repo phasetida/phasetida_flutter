@@ -5,6 +5,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:phasetida_flutter/phasetida_flutter.dart';
 import 'package:phasetida_flutter/simulator/simulator.dart';
+import 'package:phasetida_flutter/src/rust/api/phasetida.dart' as phasetida;
 
 part 'shell_bottom_controller.dart';
 part 'shell_gesture.dart';

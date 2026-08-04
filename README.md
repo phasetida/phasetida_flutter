@@ -1,5 +1,5 @@
 # phasetida_flutter
-[![Version](https://img.shields.io/badge/version-0.3.2-red.svg)]()  
+[![Version](https://img.shields.io/badge/version-0.3.4-red.svg)]()  
 [phasetida-core](https://github.com/phasetida/phasetida-core)的Flutter包装
 
 ## 安装
@@ -10,7 +10,7 @@
    # ...
    phasetida_flutter:
      git: https://github.com/phasetida/phasetida_flutter.git
-     ref: "0.3.2"
+     ref: "0.3.4"
    ```
 2. 运行命令来更新项目
    ```bash
