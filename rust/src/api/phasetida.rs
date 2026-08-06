@@ -14,11 +14,15 @@ pub fn greet(name: String) -> String {
 }
 
 #[flutter_rust_bridge::frb(sync)]
-pub fn load_level(json: String) -> Result<(f64, f64, i32), String> {
+pub fn load_level(json: String, recalculate: bool) -> Result<(f64, f64, i32), String> {
     phasetida_core::clear_states();
-    phasetida_core::init_line_states_from_json(json.as_str())
+    let metadata = phasetida_core::init_line_states_from_json(json.as_str())
         .map(|it| (it.length_in_second, it.offset, it.format_version))
-        .map_err(|it| it.to_string())
+        .map_err(|it| it.to_string());
+    if recalculate {
+        phasetida_core::recalculate_floor_position();
+    }
+    metadata
 }
 
 #[flutter_rust_bridge::frb(sync)]

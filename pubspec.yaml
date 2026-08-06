@@ -1,6 +1,6 @@
 name: phasetida_flutter
 description: "A new Flutter FFI plugin project."
-version: 0.3.4
+version: 0.3.5
 homepage: https://github.com/phasetida/phasetida_flutter
 
 environment:
