@@ -24,12 +24,14 @@ class PhigrosSimulatorRenderWidget extends StatefulWidget {
   onLoad;
   final String levelJson;
   final Uint8List songBuffer;
+  final bool forceRecalculate;
 
   const PhigrosSimulatorRenderWidget({
     super.key,
     required this.controller,
     required this.levelJson,
     required this.songBuffer,
+    this.forceRecalculate = true,
     this.onLoad,
   });
 
@@ -88,7 +90,7 @@ class PhigrosSimulatorRenderController {
     _enableSound = enableSound;
   }
 
-  void setWorldSize(double worldWidth, double worldHeight){
+  void setWorldSize(double worldWidth, double worldHeight) {
     _painterController?.setWorldSize(worldWidth, worldHeight);
   }
 }
@@ -155,7 +157,10 @@ class _PhigrosSimulatorRenderWidgetState
     List<ui.Image> clickImages;
     Duration? songLength;
     try {
-      final metadata = phasetida.loadLevel(json: widget.levelJson);
+      final metadata = phasetida.loadLevel(
+        json: widget.levelJson,
+        recalculate: widget.forceRecalculate,
+      );
       estTotalTime = metadata.$1;
       offset = metadata.$2;
       formatVersion = metadata.$3;

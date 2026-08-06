@@ -43,11 +43,9 @@ class Levels {
 @JsonSerializable(createToJson: false)
 class Level {
   final String charter;
-  @JsonKey(name: "all_combo_num")
-  final num allComboNum;
   final num difficulty;
 
-  Level(this.charter, this.allComboNum, this.difficulty);
+  Level(this.charter, this.difficulty);
 
   factory Level.fromJson(Map<String, dynamic> json) => _$LevelFromJson(json);
 }

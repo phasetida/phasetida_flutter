@@ -34,8 +34,5 @@ Levels _$LevelsFromJson(Map<String, dynamic> json) => Levels(
       : Level.fromJson(json['AT'] as Map<String, dynamic>),
 );
 
-Level _$LevelFromJson(Map<String, dynamic> json) => Level(
-  json['charter'] as String,
-  json['all_combo_num'] as num,
-  json['difficulty'] as num,
-);
+Level _$LevelFromJson(Map<String, dynamic> json) =>
+    Level(json['charter'] as String, json['difficulty'] as num);

@@ -92,7 +92,10 @@ abstract class RustLibApi extends BaseApi {
     required double holdEndHighlightHeight,
   });
 
-  (double, double, int) crateApiPhasetidaLoadLevel({required String json});
+  (double, double, int) crateApiPhasetidaLoadLevel({
+    required String json,
+    required bool recalculate,
+  });
 
   void crateApiPhasetidaResetNoteState({required double beforeTimeInSecond});
 
@@ -264,12 +267,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  (double, double, int) crateApiPhasetidaLoadLevel({required String json}) {
+  (double, double, int) crateApiPhasetidaLoadLevel({
+    required String json,
+    required bool recalculate,
+  }) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(json, serializer);
+          sse_encode_bool(recalculate, serializer);
           return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
         },
         codec: SseCodec(
@@ -277,14 +284,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_String,
         ),
         constMeta: kCrateApiPhasetidaLoadLevelConstMeta,
-        argValues: [json],
+        argValues: [json, recalculate],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiPhasetidaLoadLevelConstMeta =>
-      const TaskConstMeta(debugName: "load_level", argNames: ["json"]);
+  TaskConstMeta get kCrateApiPhasetidaLoadLevelConstMeta => const TaskConstMeta(
+    debugName: "load_level",
+    argNames: ["json", "recalculate"],
+  );
 
   @override
   void crateApiPhasetidaResetNoteState({required double beforeTimeInSecond}) {

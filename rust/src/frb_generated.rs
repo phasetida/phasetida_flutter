@@ -231,9 +231,10 @@ fn wire__crate__api__phasetida__load_level_impl(
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_json = <String>::sse_decode(&mut deserializer);
+            let api_recalculate = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             transform_result_sse::<_, String>((move || {
-                let output_ok = crate::api::phasetida::load_level(api_json)?;
+                let output_ok = crate::api::phasetida::load_level(api_json, api_recalculate)?;
                 Ok(output_ok)
             })())
         },

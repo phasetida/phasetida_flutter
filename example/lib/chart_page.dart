@@ -151,7 +151,7 @@ class ChartPageState extends State<ChartPage> {
       };
 
   Future<void> _showLocalExample() async {
-    final levelInfo = Level("Unknown", 0, 0);
+    final levelInfo = Level("Unknown", 0);
     final songInfo = Song(
       "Unknown",
       "Unknown",

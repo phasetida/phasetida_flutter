@@ -18,6 +18,7 @@ class PhigrosChartPlayerShellWidget extends StatefulWidget {
   final String songName;
   final String author;
   final String chartComposer;
+  final bool forceRecalculate;
   final Uint8List songBuffer;
   final Function() quitCallback;
 
@@ -29,6 +30,7 @@ class PhigrosChartPlayerShellWidget extends StatefulWidget {
     required this.chartComposer,
     required this.quitCallback,
     required this.songBuffer,
+    this.forceRecalculate = true,
   });
 
   @override
@@ -199,6 +201,7 @@ class _PhigrosChartPlayerShellState extends State<PhigrosChartPlayerShellWidget>
                   controller: _viewModel.controller,
                   levelJson: widget.jsonData,
                   songBuffer: widget.songBuffer,
+                  forceRecalculate: widget.forceRecalculate,
                   onLoad: (totalTime, offset, formatVersion, bufferSize) {
                     _viewModel.totalTime.value = totalTime;
                     _viewModel.offset.value = offset;
