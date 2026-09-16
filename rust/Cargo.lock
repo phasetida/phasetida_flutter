@@ -498,8 +498,8 @@ dependencies = [
 
 [[package]]
 name = "phasetida-core"
-version = "0.1.18"
-source = "git+https://github.com/phasetida/phasetida-core.git?tag=0.1.18#aed5e366efb7f06fa6b9474254e3dd40a0626167"
+version = "0.1.19"
+source = "git+https://github.com/phasetida/phasetida-core.git?tag=0.1.19#4d78c5c56bad6af44f26bde3dccc0c257b503a34"
 dependencies = [
  "serde",
  "serde_json",
